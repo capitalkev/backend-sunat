@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from src.infrastructure.auth.firebase_init import initialize_firebase
 from src.interfaces.router import sunat
 
+
 def create_application() -> FastAPI:
     """
     Punto de entrada exclusivo para el Microservicio SUNAT.
@@ -14,17 +15,17 @@ def create_application() -> FastAPI:
         description="Microservicio dedicado a la integración y visualización de ventas SUNAT.",
         version="1.0.0",
     )
-    
+
     # Inicializar Firebase para poder validar los tokens que envía el frontend
     initialize_firebase()
 
     # Orígenes permitidos (tu frontend local y en producción)
     origins = [
-        "http://localhost:5173", 
-        "https://operaciones-capitalexpress.web.app", 
-        "*"
+        "http://localhost:5173",
+        "https://operaciones-capitalexpress.web.app",
+        "*",
     ]
-    
+
     application.add_middleware(
         CORSMiddleware,
         allow_origins=origins,
@@ -42,5 +43,6 @@ def create_application() -> FastAPI:
         return {"status": "ok", "service": "sunat-microservice"}
 
     return application
+
 
 app = create_application()

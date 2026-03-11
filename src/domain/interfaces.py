@@ -1,27 +1,27 @@
-from typing import List, Protocol, Optional, Dict, Any
+from typing import Any, Protocol
 
 
 class SunatInterface(Protocol):
     def get_ventas_sire(
         self,
-        ruc_empresa: Optional[List[str]],
-        fecha_inicio: Optional[str],
-        fecha_fin: Optional[str],
-        monedas: Optional[List[str]],
-        usuario_emails: Optional[List[str]],
+        ruc_empresa: list[str] | None,
+        fecha_inicio: str | None,
+        fecha_fin: str | None,
+        monedas: list[str] | None,
+        usuario_emails: list[str] | None,
         page: int,
         page_size: int,
         sort_by: str,
-    ) -> Dict[str, Any]: ...
+    ) -> dict[str, Any]: ...
 
     def get_metricas_resumen(
         self,
-        ruc_empresa: Optional[List[str]],
-        fecha_inicio: Optional[str],
-        fecha_fin: Optional[str],
-        monedas: Optional[List[str]],
-        usuario_emails: Optional[List[str]],
-    ) -> Dict[str, Any]:
+        ruc_empresa: list[str] | None,
+        fecha_inicio: str | None,
+        fecha_fin: str | None,
+        monedas: list[str] | None,
+        usuario_emails: list[str] | None,
+    ) -> dict[str, Any]:
         """Obtiene las métricas KPIs agrupadas por moneda (PEN, USD)"""
         ...
 
@@ -29,10 +29,10 @@ class SunatInterface(Protocol):
         """Actualiza el estado1 de una factura"""
         ...
 
-    def get_empresas(self, usuario_emails: Optional[List[str]]) -> List[Dict[str, str]]:
+    def get_empresas(self, usuario_emails: list[str] | None) -> list[dict[str, str]]:
         """Obtiene la lista de clientes/empresas únicos"""
         ...
 
-    def get_usuarios_no_admin(self) -> List[Dict[str, str]]:
+    def get_usuarios_no_admin(self) -> list[dict[str, str]]:
         """Obtiene la lista de usuarios para los filtros"""
         ...

@@ -1,14 +1,14 @@
-from fastapi import Depends, HTTPException, Header
+from fastapi import Depends, Header, HTTPException
 from firebase_admin import auth
-from sqlalchemy.orm import Session
 from sqlalchemy import text
+from sqlalchemy.orm import Session
 
-from src.infrastructure.postgresql.connection_sunat import get_db
 from src.domain.models import User
+from src.infrastructure.postgresql.connection_sunat import get_db
+
 
 def get_current_user(
-    authorization: str = Header(None),
-    db: Session = Depends(get_db)
+    authorization: str = Header(None), db: Session = Depends(get_db)
 ) -> User:
     if not authorization:
         raise HTTPException(status_code=401, detail="Token no proporcionado")
@@ -25,21 +25,25 @@ def get_current_user(
         result = db.execute(text(sql), {"email": email}).fetchone()
 
         if not result:
-            raise HTTPException(status_code=401, detail="Usuario no registrado en la BD")
+            raise HTTPException(
+                status_code=401, detail="Usuario no registrado en la BD"
+            )
 
         # 3. Retornas el usuario
         return User(
             email=result._mapping["email"],
             nombre=result._mapping["nombre"],
-            rol=result._mapping["rol"]
+            rol=result._mapping["rol"],
         )
 
     except Exception as e:
-        raise HTTPException(status_code=401, detail=f"Token inválido: {str(e)}")
+        raise HTTPException(status_code=401, detail=f"Token inválido: {e!s}")
+
 
 def require_roles(allowed_roles: list[str]):
     def role_checker(current_user: User = Depends(get_current_user)) -> User:
         if current_user.rol not in allowed_roles:
             raise HTTPException(status_code=403, detail="Permisos insuficientes")
         return current_user
+
     return role_checker

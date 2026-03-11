@@ -1,6 +1,7 @@
+from typing import Any
+
 from sqlalchemy import text
 from sqlalchemy.orm import Session
-from typing import List, Optional, Dict, Any
 
 from src.domain.interfaces import SunatInterface
 
@@ -11,16 +12,15 @@ class OperacionesRepository(SunatInterface):
 
     def get_ventas_sire(
         self,
-        ruc_empresa: Optional[List[str]],
-        fecha_inicio: Optional[str],
-        fecha_fin: Optional[str],
-        monedas: Optional[List[str]],
-        usuario_emails: Optional[List[str]],
+        ruc_empresa: list[str] | None,
+        fecha_inicio: str | None,
+        fecha_fin: str | None,
+        monedas: list[str] | None,
+        usuario_emails: list[str] | None,
         page: int = 1,
         page_size: int = 20,
         sort_by: str = "fecha",
-    ) -> Dict[str, Any]:
-
+    ) -> dict[str, Any]:
         base_query = """
             FROM ventas_sire f
             JOIN enrolados en ON f.ruc = en.ruc
@@ -91,13 +91,12 @@ class OperacionesRepository(SunatInterface):
 
     def get_metricas_resumen(
         self,
-        ruc_empresa: Optional[List[str]] = None,
-        fecha_inicio: Optional[str] = None,
-        fecha_fin: Optional[str] = None,
-        monedas: Optional[List[str]] = None,
-        usuario_emails: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
-
+        ruc_empresa: list[str] | None = None,
+        fecha_inicio: str | None = None,
+        fecha_fin: str | None = None,
+        monedas: list[str] | None = None,
+        usuario_emails: list[str] | None = None,
+    ) -> dict[str, Any]:
         query_str = """
                 SELECT 
                     f.moneda,
@@ -107,10 +106,10 @@ class OperacionesRepository(SunatInterface):
                     SUM(CASE WHEN f.estado1 IN ('Sin gestión', 'Gestionando') THEN (f.total_cp + COALESCE(nc.total_cp, 0)) ELSE 0 END) as monto_disponible
                 FROM ventas_sire f
                 JOIN enrolados en ON f.ruc = en.ruc
-                LEFT JOIN ventas_sire nc 
-                    ON f.ruc = nc.ruc 
+                LEFT JOIN ventas_sire nc
+                    ON f.ruc = nc.ruc
                     AND f.nro_cp_inicial = CAST(CAST(CAST(nc.nro_cp_modificado AS FLOAT) AS INT) AS VARCHAR)
-                    AND f.serie_cdp = nc.serie_cp_modificado 
+                    AND f.serie_cdp = nc.serie_cp_modificado
                     AND nc.tipo_cp_doc = '7'
                 WHERE f.tipo_cp_doc = '1'
             """
@@ -171,8 +170,8 @@ class OperacionesRepository(SunatInterface):
         return result.rowcount > 0
 
     def get_empresas(
-        self, usuario_emails: Optional[List[str]] = None
-    ) -> List[Dict[str, str]]:
+        self, usuario_emails: list[str] | None = None
+    ) -> list[dict[str, str]]:
         query_str = """
             SELECT DISTINCT f.ruc, f.razon_social 
             FROM ventas_sire f
@@ -190,7 +189,7 @@ class OperacionesRepository(SunatInterface):
             for row in result.mappings()
         ]
 
-    def get_usuarios_no_admin(self) -> List[Dict[str, str]]:
+    def get_usuarios_no_admin(self) -> list[dict[str, str]]:
         # Ajusta esta query según la tabla donde guardas tus usuarios
         query_str = "SELECT email, nombre, rol FROM enrolados"
         result = self.db.execute(text(query_str))
