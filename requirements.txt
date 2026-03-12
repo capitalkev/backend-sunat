@@ -1,0 +1,7 @@
+fastapi>=0.100.0
+uvicorn>=0.23.0
+firebase-admin>=6.2.0
+sqlalchemy>=2.0.0
+pydantic>=2.0.0
+python-dotenv>=1.0.0
+cloud-sql-python-connector[pg8000]>=1.4.0
