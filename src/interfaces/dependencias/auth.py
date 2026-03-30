@@ -17,29 +17,46 @@ def get_current_user(
 
     token = authorization.replace("Bearer ", "")
 
+    # 1. Validar el token con Firebase independientemente
     try:
-        # 1. Firebase verifica que el token sea criptográficamente válido
         decoded_token = auth.verify_id_token(token)
         email = decoded_token.get("email")
+    except Exception as e:
+        print(f"🔴 ERROR FIREBASE: {e}")
+        raise HTTPException(
+            status_code=401, detail="Token de Firebase inválido o expirado"
+        )
 
-        # 2. Consultas rápidamente tu BD compartida para saber su rol
-        sql = "SELECT email, nombre, rol FROM usuarios WHERE email = :email"
+    # 2. Consultar el usuario en PostgreSQL
+    try:
+        # Quitamos la columna 'nombre' porque no existe
+        sql = "SELECT email, rol FROM usuarios WHERE email = :email"
         result = db.execute(text(sql), {"email": email}).fetchone()
 
         if not result:
+            print(
+                f"🟡 AVISO: El correo {email} entró por Firebase pero no existe en PostgreSQL"
+            )
             raise HTTPException(
                 status_code=401, detail="Usuario no registrado en la BD"
             )
 
-        # 3. Retornas el usuario
         return User(
             email=result._mapping["email"],
-            nombre=result._mapping["nombre"],
+            nombre=result._mapping[
+                "email"
+            ],  # Usamos el email para rellenar el campo nombre requerido
             rol=result._mapping["rol"],
         )
 
+    except HTTPException:
+        # Dejar pasar el error 401 de "Usuario no registrado"
+        raise
     except Exception as e:
-        raise HTTPException(status_code=401, detail=f"Token inválido: {e!s}") from None
+        print(f"🔴 ERROR BASE DE DATOS (Auth): {e}")
+        raise HTTPException(
+            status_code=500, detail="Error interno verificando usuario en BD"
+        )
 
 
 def require_roles(allowed_roles: list[str]) -> Callable[[User], User]:

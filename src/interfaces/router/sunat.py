@@ -31,7 +31,7 @@ def get_ventas(
     current_user: User = Depends(get_current_user),
 ):
     return action.execute(
-        current_user=current_user, filtros=filtros, paginacion=paginacion
+        user_session=current_user, filtros=filtros, paginacion=paginacion
     )
 
 

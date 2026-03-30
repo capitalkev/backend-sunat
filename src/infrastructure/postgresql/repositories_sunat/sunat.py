@@ -37,18 +37,27 @@ class OperacionesRepository(SunatInterface):
 
         # Filtros
         if usuario_emails:
-            filters_query += " AND en.email IN :emails"
-            params["emails"] = tuple(usuario_emails)
+            p_emails = ", ".join([f":email_{i}" for i in range(len(usuario_emails))])
+            filters_query += f" AND en.email IN ({p_emails})"
+            for i, email in enumerate(usuario_emails):
+                params[f"email_{i}"] = email
+
         if ruc_empresa:
-            filters_query += " AND f.ruc IN :rucs"
-            params["rucs"] = tuple(ruc_empresa)
+            p_rucs = ", ".join([f":ruc_{i}" for i in range(len(ruc_empresa))])
+            filters_query += f" AND f.ruc IN ({p_rucs})"
+            for i, ruc in enumerate(ruc_empresa):
+                params[f"ruc_{i}"] = ruc
+
         if fecha_inicio and fecha_fin:
             filters_query += " AND f.fecha_emision BETWEEN :inicio AND :fin"
             params["inicio"] = fecha_inicio
             params["fin"] = fecha_fin
+
         if monedas:
-            filters_query += " AND f.moneda IN :monedas"
-            params["monedas"] = tuple(monedas)
+            p_monedas = ", ".join([f":moneda_{i}" for i in range(len(monedas))])
+            filters_query += f" AND f.moneda IN ({p_monedas})"
+            for i, mon in enumerate(monedas):
+                params[f"moneda_{i}"] = mon
 
         # Query para el total de items (Paginación)
         count_query = f"SELECT COUNT(*) {base_query} {filters_query}"
@@ -115,20 +124,29 @@ class OperacionesRepository(SunatInterface):
             """
 
         params = {}
-        # Aplicar mismos filtros que en get_ventas
+        # Filtros para métricas
         if usuario_emails:
-            query_str += " AND en.email IN :emails"
-            params["emails"] = tuple(usuario_emails)
+            p_emails = ", ".join([f":email_{i}" for i in range(len(usuario_emails))])
+            query_str += f" AND en.email IN ({p_emails})"
+            for i, email in enumerate(usuario_emails):
+                params[f"email_{i}"] = email
+
         if ruc_empresa:
-            query_str += " AND f.ruc IN :rucs"
-            params["rucs"] = tuple(ruc_empresa)
+            p_rucs = ", ".join([f":ruc_{i}" for i in range(len(ruc_empresa))])
+            query_str += f" AND f.ruc IN ({p_rucs})"
+            for i, ruc in enumerate(ruc_empresa):
+                params[f"ruc_{i}"] = ruc
+
         if fecha_inicio and fecha_fin:
             query_str += " AND f.fecha_emision BETWEEN :inicio AND :fin"
             params["inicio"] = fecha_inicio
             params["fin"] = fecha_fin
+
         if monedas:
-            query_str += " AND f.moneda IN :monedas"
-            params["monedas"] = tuple(monedas)
+            p_monedas = ", ".join([f":moneda_{i}" for i in range(len(monedas))])
+            query_str += f" AND f.moneda IN ({p_monedas})"
+            for i, mon in enumerate(monedas):
+                params[f"moneda_{i}"] = mon
 
         query_str += " GROUP BY f.moneda"
 
@@ -180,8 +198,10 @@ class OperacionesRepository(SunatInterface):
         """
         params = {}
         if usuario_emails:
-            query_str += " AND en.email IN :emails"
-            params["emails"] = tuple(usuario_emails)
+            p_emails = ", ".join([f":email_{i}" for i in range(len(usuario_emails))])
+            query_str += f" AND en.email IN ({p_emails})"
+            for i, email in enumerate(usuario_emails):
+                params[f"email_{i}"] = email
 
         result = self.db.execute(text(query_str), params)
         return [
@@ -190,7 +210,14 @@ class OperacionesRepository(SunatInterface):
         ]
 
     def get_usuarios_no_admin(self) -> list[dict[str, str]]:
-        # Ajusta esta query según la tabla donde guardas tus usuarios
-        query_str = "SELECT email, nombre, rol FROM enrolados"
+        # Cambiamos 'enrolados' por 'usuarios' y usamos 'email' como 'nombre'
+        query_str = "SELECT email, email as nombre, rol FROM usuarios"
         result = self.db.execute(text(query_str))
         return [dict(row) for row in result.mappings()]
+
+    def insert_enrolado(
+        self, ruc: str, data: Any
+    ) -> None:  # Insertar enrolado a mi base de datos
+        query = text("INSERT INTO enrolado (ruc, data) VALUES (:ruc, :data)")
+        self.db.execute(query, {"ruc": ruc, "data": data})
+        return self.db.commit()

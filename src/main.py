@@ -21,7 +21,6 @@ def create_application() -> FastAPI:
 
     # Orígenes permitidos (tu frontend local y en producción)
     origins = [
-        "http://localhost:5173",
         "https://operaciones-capitalexpress.web.app",
     ]
 

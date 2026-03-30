@@ -5,7 +5,7 @@ class SunatUseCases:
     def __init__(self, repo: OperacionesRepository):
         self.repo = repo
 
-    def get_ventas(self, user_session, filters: dict):
+    def get_ventas(self, user_session, filters: dict) -> dict:
         usuario_emails = filters.get("usuario_emails")
 
         if not user_session.is_admin():
@@ -22,7 +22,7 @@ class SunatUseCases:
             sort_by=filters.get("sort_by", "fecha"),
         )
 
-    def get_metricas(self, user_session, filters: dict):
+    def get_metricas(self, user_session, filters: dict) -> dict:
         usuario_emails = filters.get("usuario_emails")
 
         # CORRECCIÓN AQUÍ TAMBIÉN
@@ -37,16 +37,18 @@ class SunatUseCases:
             usuario_emails=usuario_emails,
         )
 
-    def update_estado(self, venta_id: str, nuevo_estado: str):
+    def update_estado(self, venta_id: str, nuevo_estado: str) -> bool:
         return self.repo.update_venta_estado(venta_id, nuevo_estado)
 
-    def get_empresas(self, user_session, usuario_emails: list = None):
+    def get_empresas(
+        self, user_session, usuario_emails: list = None
+    ) -> list[dict[str, str]]:
         # CORRECCIÓN AQUÍ TAMBIÉN
         if not user_session.is_admin():
             usuario_emails = [user_session.email]
         return self.repo.get_empresas(usuario_emails)
 
-    def get_usuarios(self, user_session):
+    def get_usuarios(self, user_session) -> list[dict[str, str]]:
         if not user_session.is_admin():
             return []
         return self.repo.get_usuarios_no_admin()
