@@ -26,7 +26,7 @@ class OperacionesRepository(SunatInterface):
             JOIN enrolados en ON f.ruc = en.ruc
             LEFT JOIN ventas_sunat nc
                 ON f.ruc = nc.ruc
-                AND f.nro_cp_doc = CAST(CAST(CAST(nc.nro_cp_modificado AS FLOAT) AS INT) AS VARCHAR)
+                AND f.nro_cp_doc = nc.nro_cp_modificado
                 AND f.serie_cdp = nc.serie_cp_modificado
                 AND nc.tipo_cp_doc = '07'
             WHERE f.tipo_cp_doc = '01'
@@ -63,12 +63,12 @@ class OperacionesRepository(SunatInterface):
         count_query = f"SELECT COUNT(*) {base_query} {filters_query}"
         total_items = self.db.execute(text(count_query), params).scalar()
 
-        # Query principal para los datos
+        # Query principal para los datos (SIN estado1 y estado2)
         select_clause = """
             SELECT
                 f.ruc, f.razon_social, f.moneda,
                 f.serie_cdp, f.nro_cp_doc, f.periodo, f.fecha_emision,
-                f.estado1, f.estado2, f.cliente_razon_social,
+                f.cliente_razon_social,
                 f.total_cp AS total_factura,
                 COALESCE(nc.total_cp, 0) AS total_nota_credito,
                 (f.total_cp + COALESCE(nc.total_cp, 0)) AS monto_neto,
@@ -106,18 +106,18 @@ class OperacionesRepository(SunatInterface):
         monedas: list[str] | None = None,
         usuario_emails: list[str] | None = None,
     ) -> dict[str, Any]:
+
+        # Query limpio sin la lógica de "estado"
         query_str = """
                 SELECT
                     f.moneda,
                     COUNT(f.*) as cantidad,
-                    SUM(f.total_cp + COALESCE(nc.total_cp, 0)) as total_facturado,
-                    SUM(CASE WHEN f.estado1 = 'Ganada' THEN (f.total_cp + COALESCE(nc.total_cp, 0)) ELSE 0 END) as monto_ganado,
-                    SUM(CASE WHEN f.estado1 IN ('Sin gestión', 'Gestionando') THEN (f.total_cp + COALESCE(nc.total_cp, 0)) ELSE 0 END) as monto_disponible
+                    SUM(f.total_cp + COALESCE(nc.total_cp, 0)) as total_facturado
                 FROM ventas_sunat f
                 JOIN enrolados en ON f.ruc = en.ruc
                 LEFT JOIN ventas_sunat nc
                     ON f.ruc = nc.ruc
-                    AND f.nro_cp_doc = CAST(CAST(CAST(nc.nro_cp_modificado AS FLOAT) AS INT) AS VARCHAR)
+                    AND f.nro_cp_doc = nc.nro_cp_modificado
                     AND f.serie_cdp = nc.serie_cp_modificado
                     AND nc.tipo_cp_doc = '07'
                 WHERE f.tipo_cp_doc = '01'
@@ -153,37 +153,19 @@ class OperacionesRepository(SunatInterface):
         result = self.db.execute(text(query_str), params)
 
         metricas = {
-            "PEN": {
-                "totalFacturado": 0,
-                "montoGanado": 0,
-                "montoDisponible": 0,
-                "cantidad": 0,
-            },
-            "USD": {
-                "totalFacturado": 0,
-                "montoGanado": 0,
-                "montoDisponible": 0,
-                "cantidad": 0,
-            },
+            "PEN": {"totalFacturado": 0, "cantidad": 0},
+            "USD": {"totalFacturado": 0, "cantidad": 0},
         }
 
-        # Llenar con resultados reales de la base de datos
         for row in result.mappings():
             moneda = row["moneda"]
             if moneda in metricas:
                 metricas[moneda] = {
                     "totalFacturado": float(row["total_facturado"] or 0),
-                    "montoGanado": float(row["monto_ganado"] or 0),
-                    "montoDisponible": float(row["monto_disponible"] or 0),
                     "cantidad": row["cantidad"],
                 }
 
         return metricas
-
-    def update_venta_estado(self, venta_id: str, estado: str) -> None:
-        query_str = ""
-        self.db.execute(text(query_str), {"estado": estado, "id": venta_id})
-        return self.db.commit()
 
     def get_empresas(
         self, usuario_emails: list[str] | None = None
@@ -206,9 +188,3 @@ class OperacionesRepository(SunatInterface):
             {"ruc": row["ruc"], "razon_social": row["razon_social"]}
             for row in result.mappings()
         ]
-
-    def get_usuarios_no_admin(self) -> list[dict[str, str]]:
-        # Cambiamos 'enrolados' por 'usuarios' y usamos 'email' como 'nombre'
-        query_str = "SELECT email, email as nombre, rol FROM usuarios"
-        result = self.db.execute(text(query_str))
-        return [dict(row) for row in result.mappings()]
