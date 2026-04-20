@@ -1,3 +1,4 @@
+from capitalexpress_auth import User
 from fastapi import APIRouter, Depends, HTTPException, Path
 
 from src.application.sunat.get_empresas import GetEmpresas
@@ -5,8 +6,7 @@ from src.application.sunat.get_metricas import GetMetricas
 from src.application.sunat.get_usuarios import GetUsuarios
 from src.application.sunat.get_ventas import GetVentas
 from src.application.sunat.update_estado import UpdateEstadoVenta
-from src.domain.models import User
-from src.interfaces.dependencias.auth import get_current_user
+from src.interfaces.dependencias.auth import get_current_user, require_roles
 from src.interfaces.dependencias.sunat import (
     dp_get_empresas,
     dp_get_metricas,
@@ -28,10 +28,10 @@ def get_ventas(
     filtros: FiltrosSunatParams = Depends(),
     paginacion: PaginacionParams = Depends(),
     action: GetVentas = Depends(dp_get_ventas),
-    current_user: User = Depends(get_current_user),
+    user: User = Depends(require_roles(["admin", "ventas"])),
 ):
     return action.execute(
-        user_session=current_user, filtros=filtros, paginacion=paginacion
+        user_session=user, filtros=filtros, paginacion=paginacion
     )
 
 
@@ -39,9 +39,10 @@ def get_ventas(
 def get_metricas(
     filtros: FiltrosSunatParams = Depends(),
     action: GetMetricas = Depends(dp_get_metricas),
-    current_user: User = Depends(get_current_user),
+    user: User = Depends(require_roles(["admin", "ventas"])),
 ):
-    return action.execute(current_user=current_user, filtros=filtros)
+    return action.execute(current_user=user, filtros=filtros)
+
 
 
 @router.put("/ventas/{venta_id}/estado")
@@ -49,6 +50,7 @@ def update_venta_estado(
     venta_id: str = Path(...),
     payload: UpdateEstadoRequest = Depends(),
     action: UpdateEstadoVenta = Depends(dp_update_estado),
+    user: User = Depends(require_roles(["admin", "ventas"])),
     current_user: User = Depends(get_current_user),
 ):
     actualizado = action.execute(venta_id, payload.estado1)
@@ -62,14 +64,14 @@ def update_venta_estado(
 def get_empresas(
     usuario_emails: list[str] | None = None,
     action: GetEmpresas = Depends(dp_get_empresas),
-    current_user: User = Depends(get_current_user),
+    user: User = Depends(require_roles(["admin", "ventas"])),
 ):
-    return action.execute(current_user=current_user, usuario_emails=usuario_emails)
+    return action.execute(current_user=user, usuario_emails=usuario_emails)
 
 
 @router.get("/usuarios/no-admin")
 def get_usuarios(
     action: GetUsuarios = Depends(dp_get_usuarios),
-    current_user: User = Depends(get_current_user),
+    user: User = Depends(require_roles(["admin", "ventas"])),
 ):
-    return action.execute(current_user=current_user)
+    return action.execute(current_user=user)

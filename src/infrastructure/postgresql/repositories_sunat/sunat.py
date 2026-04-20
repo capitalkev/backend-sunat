@@ -26,10 +26,10 @@ class OperacionesRepository(SunatInterface):
             JOIN enrolados en ON f.ruc = en.ruc
             LEFT JOIN ventas_sunat nc
                 ON f.ruc = nc.ruc
-                AND f.nro_cp_inicial = CAST(CAST(CAST(nc.nro_cp_modificado AS FLOAT) AS INT) AS VARCHAR)
+                AND f.nro_cp_doc = CAST(CAST(CAST(nc.nro_cp_modificado AS FLOAT) AS INT) AS VARCHAR)
                 AND f.serie_cdp = nc.serie_cp_modificado
-                AND nc.tipo_cp_doc = '7'
-            WHERE f.tipo_cp_doc = '1'
+                AND nc.tipo_cp_doc = '07'
+            WHERE f.tipo_cp_doc = '01'
         """
 
         params = {}
@@ -65,10 +65,10 @@ class OperacionesRepository(SunatInterface):
 
         # Query principal para los datos
         select_clause = """
-            SELECT 
-                f.id, f.ruc, f.razon_social, f.moneda, 
-                f.serie_cdp, f.nro_cp_inicial, f.periodo, f.fecha_emision,
-                f.estado1, f.estado2, f.apellidos_nombres_razon_social,
+            SELECT
+                f.ruc, f.razon_social, f.moneda,
+                f.serie_cdp, f.nro_cp_doc, f.periodo, f.fecha_emision,
+                f.estado1, f.estado2, f.cliente_razon_social,
                 f.total_cp AS total_factura,
                 COALESCE(nc.total_cp, 0) AS total_nota_credito,
                 (f.total_cp + COALESCE(nc.total_cp, 0)) AS monto_neto,
@@ -109,7 +109,7 @@ class OperacionesRepository(SunatInterface):
         query_str = """
                 SELECT
                     f.moneda,
-                    COUNT(f.id) as cantidad,
+                    COUNT(f.*) as cantidad,
                     SUM(f.total_cp + COALESCE(nc.total_cp, 0)) as total_facturado,
                     SUM(CASE WHEN f.estado1 = 'Ganada' THEN (f.total_cp + COALESCE(nc.total_cp, 0)) ELSE 0 END) as monto_ganado,
                     SUM(CASE WHEN f.estado1 IN ('Sin gestión', 'Gestionando') THEN (f.total_cp + COALESCE(nc.total_cp, 0)) ELSE 0 END) as monto_disponible
@@ -117,10 +117,10 @@ class OperacionesRepository(SunatInterface):
                 JOIN enrolados en ON f.ruc = en.ruc
                 LEFT JOIN ventas_sunat nc
                     ON f.ruc = nc.ruc
-                    AND f.nro_cp_inicial = CAST(CAST(CAST(nc.nro_cp_modificado AS FLOAT) AS INT) AS VARCHAR)
+                    AND f.nro_cp_doc = CAST(CAST(CAST(nc.nro_cp_modificado AS FLOAT) AS INT) AS VARCHAR)
                     AND f.serie_cdp = nc.serie_cp_modificado
-                    AND nc.tipo_cp_doc = '7'
-                WHERE f.tipo_cp_doc = '1'
+                    AND nc.tipo_cp_doc = '07'
+                WHERE f.tipo_cp_doc = '01'
             """
 
         params = {}
@@ -181,7 +181,7 @@ class OperacionesRepository(SunatInterface):
         return metricas
 
     def update_venta_estado(self, venta_id: str, estado: str) -> None:
-        query_str = "UPDATE ventas_sunat SET estado1 = :estado WHERE id = :id"
+        query_str = ""
         self.db.execute(text(query_str), {"estado": estado, "id": venta_id})
         return self.db.commit()
 
@@ -189,7 +189,7 @@ class OperacionesRepository(SunatInterface):
         self, usuario_emails: list[str] | None = None
     ) -> list[dict[str, str]]:
         query_str = """
-            SELECT DISTINCT f.ruc, f.razon_social 
+            SELECT DISTINCT f.ruc, f.razon_social
             FROM ventas_sunat f
             JOIN enrolados en ON f.ruc = en.ruc
             WHERE 1=1
@@ -212,10 +212,3 @@ class OperacionesRepository(SunatInterface):
         query_str = "SELECT email, email as nombre, rol FROM usuarios"
         result = self.db.execute(text(query_str))
         return [dict(row) for row in result.mappings()]
-
-    def insert_enrolado(
-        self, ruc: str, data: Any
-    ) -> None:  # Insertar enrolado a mi base de datos
-        query = text("INSERT INTO enrolado (ruc, data) VALUES (:ruc, :data)")
-        self.db.execute(query, {"ruc": ruc, "data": data})
-        return self.db.commit()

@@ -36,7 +36,3 @@ class SunatInterface(Protocol):
     def get_usuarios_no_admin(self) -> list[dict[str, str]]:
         """Obtiene la lista de usuarios para los filtros"""
         ...
-
-    def insert_enrolado(self, ruc: str, data: Any) -> None:
-        """Inserta un enrolado en la base de datos"""
-        ...

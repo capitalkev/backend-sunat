@@ -1,12 +1,11 @@
 from src.domain.interfaces import SunatInterface
-from src.domain.models import User
 
 
 class GetMetricas:
     def __init__(self, repository: SunatInterface):
         self.repository = repository
 
-    def execute(self, current_user: User, filtros):
+    def execute(self, current_user, filtros):
         usuario_emails = filtros.usuario_emails
 
         if not current_user.is_admin():
