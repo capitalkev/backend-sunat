@@ -1,11 +1,14 @@
+from capitalexpress_auth import User
+
 from src.domain.interfaces import SunatInterface
+from src.interfaces.dto.sunat_dto import FiltrosSunatParams
 
 
 class GetMetricas:
     def __init__(self, repository: SunatInterface):
         self.repository = repository
 
-    def execute(self, current_user, filtros):
+    def execute(self, current_user: User, filtros: FiltrosSunatParams):
         usuario_emails = filtros.usuario_emails
 
         if not current_user.is_admin():

@@ -1,7 +1,8 @@
 from typing import Any
 
+from capitalexpress_auth import User
+
 from src.domain.interfaces import SunatInterface
-from src.domain.models import User
 from src.interfaces.dto.sunat_dto import FiltrosSunatParams, PaginacionParams
 
 

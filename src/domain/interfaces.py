@@ -21,18 +21,8 @@ class SunatInterface(Protocol):
         fecha_fin: str | None,
         monedas: list[str] | None,
         usuario_emails: list[str] | None,
-    ) -> dict[str, Any]:
-        """Obtiene las métricas KPIs agrupadas por moneda (PEN, USD)"""
-        ...
+    ) -> dict[str, Any]: ...
 
-    def update_venta_estado(self, venta_id: str, estado: str) -> None:
-        """Actualiza el estado1 de una factura"""
-        ...
-
-    def get_empresas(self, usuario_emails: list[str] | None) -> list[dict[str, str]]:
-        """Obtiene la lista de clientes/empresas únicos"""
-        ...
-
-    def get_usuarios_no_admin(self) -> list[dict[str, str]]:
-        """Obtiene la lista de usuarios para los filtros"""
-        ...
+    def get_empresas(
+        self, usuario_emails: list[str] | None
+    ) -> list[dict[str, str]]: ...
